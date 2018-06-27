@@ -34,18 +34,20 @@ app.get("/all", function(req, res) {
   });
   
 
-  app.get("/scrape", function(req, res) {
-request('https://finance.yahoo.com/tech/', function(err, response, html){
-	if (err) {
-		throw err
-    }
+app.get("/scrape", function(req, res) {
+  // console.log('scraping')
+  request("https://news.ycombinator.com/", function(error, response, html){
+  
     var $ = cheerio.load(html);
     
+    // console.log('looping')
     $(".title").each(function(i, element) {
       
       var title = $(element).children("a").text();
       var link = $(element).children("a").attr("href");
 
+      console.log(title)
+      console.log(link)
       if (title && link) {
         
         db.Murial.insert({
@@ -62,8 +64,9 @@ request('https://finance.yahoo.com/tech/', function(err, response, html){
         });
       }
     });
+
+    res.send("Scrape Complete");
   });
-  res.send("Scrape Complete");
 });
 
 app.listen(3000, function() {
