@@ -4,7 +4,17 @@ var express = require("express");
 var mongojs = require("mongojs");
 
 var app = express();
+app.engine('handlebars', exphbs({
 
+	defaultLayout: 'main',
+
+	layoutsDir: 'views/layouts'
+
+}));
+
+app.set('view engine', 'handlebars');
+
+app.set('views', path.resolve(__dirname,'views'));
 
 var databaseUrl = "scraper2";
 var collections = ["Murial"];
@@ -15,7 +25,7 @@ db.on("error", function(error) {
 });
 
 app.get("/", function(req, res) {
-  res.send("Murial Rocks!");
+  res.send("Index");
 });
 
 // Retrieve data from the db
@@ -28,7 +38,8 @@ app.get("/all", function(req, res) {
       }
       // If there are no errors, send the data to the browser as json
       else {
-        res.json(found);
+      
+        res.sendFile("index.handlebars")
       }
     });
   });
