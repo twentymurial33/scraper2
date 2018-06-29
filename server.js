@@ -1,85 +1,73 @@
-var request=require("request");
+var express = require('express');
+var bodyParser = require('body-parser');
+var logger=require("morgan");
+var mongoose = require('mongoose');
+var axios=require("axios");
 var cheerio=require("cheerio");
-var express = require("express");
-var mongojs = require("mongojs");
+var db=require("./models");
 
-var app = express();
-app.engine('handlebars', exphbs({
+var PORT=3000;
 
-	defaultLayout: 'main',
+var app=express();
 
-	layoutsDir: 'views/layouts'
 
-}));
+app.use(logger("dev"));
 
-app.set('view engine', 'handlebars');
+app.use(bodyParser.urlencoded({ extended: true }));
 
-app.set('views', path.resolve(__dirname,'views'));
-
-var databaseUrl = "scraper2";
-var collections = ["Murial"];
-
-var db = mongojs(databaseUrl, collections);
-db.on("error", function(error) {
-  console.log("Database Error:", error);
-});
-
-app.get("/", function(req, res) {
-  res.send("Index");
-});
-
-// Retrieve data from the db
-app.get("/all", function(req, res) {
-    // Find all results from the Murial collection in the db
-    db.Murial.find({}, function(error, found) {
-      // Throw any errors to the console
-      if (error) {
-        console.log(error);
-      }
-      // If there are no errors, send the data to the browser as json
-      else {
-      
-        res.sendFile("index.handlebars")
-      }
-    });
-  });
-  
+app.use(express.static("public"));
 
 app.get("/scrape", function(req, res) {
-  // console.log('scraping')
-  request("https://news.ycombinator.com/", function(error, response, html){
-  
-    var $ = cheerio.load(html);
-    
-    // console.log('looping')
-    $(".title").each(function(i, element) {
-      
-      var title = $(element).children("a").text();
-      var link = $(element).children("a").attr("href");
-
-      console.log(title)
-      console.log(link)
-      if (title && link) {
-        
-        db.Murial.insert({
-          title: title,
-          link: link
-        },
-        function(err, inserted) {
-          if (err) {
-            console.log(err);
-          }
-          else {
-            console.log(inserted);
-          }
-        });
-      }
-    });
-
-    res.send("Scrape Complete");
+	
+	axios.get("https://www.cnn.com/").then(function(response) {
+	  var $ = cheerio.load(response.data);
+	  $("article h2").each(function(i, element) {
+		var result = {};
+		result.title = $(this)
+		  .children("a")
+		  .text();
+		result.link = $(this)
+		  .children("a")
+		  .attr("href");
+		db.Murial.create(result)
+		  .then(function(dbMurial) {
+			
+		  })
+		  .catch(function(err) {
+			
+			return res.json(err);
+		  });
+	  });
+	  
+	   res.json(response);
+	});
   });
+ 
+app.get("/articles", function(req, res) {
+  
+  return(function(dbMurial) {
+      
+      res.json("response");
+    })
+    (function(err) {
+      
+      res.json(err);
+    });
 });
 
-app.listen(3000, function() {
-  console.log("App running on port 3000!");
+app.get("/articles/:id", function(req, res) {
+  // db.Murial.findOne({ _id: req.params.id })
+    populate("note")
+    return(function(dbMurial) {
+      res.json(dbMurial);
+    })
+    (function(err) {
+      res.json(err);
+    });
 });
+
+app.listen(PORT, function() {
+  console.log("App running on port " + PORT + "!");
+});
+
+  
